@@ -37,15 +37,16 @@ def home():
 @app.post("/api/register")
 def register(user: UserCreate):
     with get_conn() as conn:
-        cur = conn.execute("SELECT id FROM users WHERE email=%s", (user.email,))
+        # Check if username already exists
+        cur = conn.execute("SELECT id FROM users WHERE username=%s", (user.username,))
         if cur.fetchone():
-            raise HTTPException(400, "User exists")
+            raise HTTPException(400, "Username already exists")
 
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         cur = conn.execute(
-            "INSERT INTO users (email, password_hash, created_at) VALUES (%s, %s, %s) RETURNING id",
-            (user.email, hash_password(user.password), now),
+            "INSERT INTO users (username, password_hash, created_at) VALUES (%s, %s, %s) RETURNING id",
+            (user.username, hash_password(user.password), now),
         )
         conn.commit()
 
@@ -55,7 +56,8 @@ def register(user: UserCreate):
 @app.post("/api/login")
 def login(user: UserLogin):
     with get_conn() as conn:
-        cur = conn.execute("SELECT * FROM users WHERE email=%s", (user.email,))
+        # Allow login with email, username, or phone number
+        cur = conn.execute("SELECT * FROM users WHERE email=%s OR username=%s OR phone_number=%s", (user.identifier, user.identifier, user.identifier))
         db_user = cur.fetchone()
 
         if not db_user or not verify_password(user.password, db_user["password_hash"]):

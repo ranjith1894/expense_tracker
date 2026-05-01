@@ -6,7 +6,7 @@ const API_BASE = "";
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [authMode, setAuthMode] = useState("login");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [note, setNote] = useState("");
   const [expenses, setExpenses] = useState([]);
@@ -64,14 +64,27 @@ export default function App() {
 
     try {
       const path = authMode === "login" ? "/api/login" : "/api/register";
+      
+      let body;
+      if (authMode === "login") {
+        body = { identifier, password };
+      } else {
+        // For registration: only username and password
+        const username = identifier.trim();
+        body = {
+          username: username,
+          password
+        };
+      }
+      
       const data = await request(path, {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       });
 
       localStorage.setItem("token", data.access_token);
       setToken(data.access_token);
-      setEmail("");
+      setIdentifier("");
       setPassword("");
     } catch (err) {
       setError(err.message);
@@ -140,14 +153,14 @@ export default function App() {
       <div className="page">
         <div className="auth-card">
           <h1>Expense Tracker</h1>
-          <p className="muted">Login and track expenses using simple notes.</p>
+          <p className="muted">{authMode === "login" ? "Login and track expenses using simple notes." : "Register with any username (admin, test, etc)"}</p>
 
           <form onSubmit={handleAuth} className="form">
             <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder={authMode === "login" ? "Email, Username or Phone" : "Email, Username or Phone"}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
             />
 

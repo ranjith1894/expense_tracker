@@ -65,7 +65,9 @@ def init_db():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE,
         email TEXT UNIQUE,
+        phone_number TEXT UNIQUE,
         password TEXT,
         created_at TIMESTAMP
     )
@@ -112,6 +114,14 @@ def init_db():
     cur.execute("""
     ALTER TABLE expenses
     ADD COLUMN IF NOT EXISTS expense_date DATE
+    """)
+    cur.execute("""
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS username TEXT UNIQUE
+    """)
+    cur.execute("""
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS phone_number TEXT UNIQUE
     """)
 
     conn.commit()
