@@ -18,7 +18,7 @@ DEFAULT_CATEGORIES = [
     ),
     (
         "Shopping",
-        "amazon,flipkart,myntra,ajio,shopping,dress,shirt,jeans,shoe,watch,bag,clothes,accessories"
+        "amazon,flipkart,myntra,ajio,shopping,dress,shirt,jeans,shoe,watch,bag,clothes,accessories,grocery,groceries,hypermarket,supermarket,store,mall"
     ),
     (
         "Bills",
