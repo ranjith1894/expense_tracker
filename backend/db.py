@@ -3,6 +3,8 @@ import psycopg
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+from psycopg.rows import dict_row
+
 
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
@@ -50,9 +52,9 @@ DEFAULT_CATEGORIES = [
 
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-
+DATABASE_URL = "postgresql://neondb_owner:npg_uSUDB9lpbt6e@ep-rough-wildflower-amy6o6i8.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require"
 def get_conn():
-    return psycopg.connect(DATABASE_URL)
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
 
 
 
@@ -79,15 +81,21 @@ def init_db():
     )
     """)
 
-    cur.execute("""
+    conn.execute("""
     CREATE TABLE IF NOT EXISTS categories (
         id SERIAL PRIMARY KEY,
         name TEXT UNIQUE NOT NULL,
-        icon TEXT,
-        color TEXT,
-        keywords TEXT
+        keywords TEXT,
+        created_at TIMESTAMP
     )
     """)
+
+    conn.execute("""
+    ALTER TABLE categories
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP
+    """)
+
+    conn.commit()
 
     conn.commit()
     cur.close()
