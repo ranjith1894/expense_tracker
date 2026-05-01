@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Trash2, LogOut } from "lucide-react";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
