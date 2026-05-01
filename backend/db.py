@@ -79,6 +79,16 @@ def init_db():
     )
     """)
 
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS categories (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        icon TEXT,
+        color TEXT,
+        keywords TEXT
+    )
+    """)
+
     conn.commit()
     cur.close()
     conn.close()
