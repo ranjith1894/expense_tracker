@@ -1,0 +1,42 @@
+# =========================
+# Python (backend)
+# =========================
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+
+# =========================
+# Node (frontend)
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Environment variables
+# =========================
+.env
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# Build files (IMPORTANT)
+# =========================
+# We KEEP frontend/dist for Render deploy
+# So DO NOT ignore it
+
+# =========================
+# Logs
+# =========================
+*.log
