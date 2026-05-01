@@ -10,11 +10,19 @@ ALGORITHM = "HS256"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer()
 
-def hash_password(p: str):
-    return pwd_context.hash(p[:72])
 
-def verify_password(p, h):
-    return pwd_context.verify(p[:72], h)
+
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__truncate_error=False,
+)
+
+def hash_password(password: str):
+    return pwd_context.hash(password.encode("utf-8")[:72])
+
+def verify_password(password: str, hashed_password: str):
+    return pwd_context.verify(password.encode("utf-8")[:72], hashed_password)
 
 def create_token(user_id: int):
     payload = {
