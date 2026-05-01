@@ -1,3 +1,5 @@
+import os
+import psycopg
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -45,52 +47,41 @@ DEFAULT_CATEGORIES = [
         ""
     ),
 ]
+
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 def get_conn():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return psycopg.connect(DATABASE_URL)
+
+
 
 def init_db():
-    with get_conn() as conn:
-        conn.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
-            email TEXT UNIQUE,
-            password_hash TEXT,
-            created_at TEXT
-        )
-        """)
+    conn = get_conn()
+    cur = conn.cursor()
 
-        conn.execute("""
-        CREATE TABLE IF NOT EXISTS categories (
-            id INTEGER PRIMARY KEY,
-            name TEXT UNIQUE,
-            keywords TEXT,
-            created_at TEXT
-        )
-        """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE,
+        password TEXT,
+        created_at TIMESTAMP
+    )
+    """)
 
-        conn.execute("""
-        CREATE TABLE IF NOT EXISTS expenses (
-            id INTEGER PRIMARY KEY,
-            user_id INTEGER,
-            category_id INTEGER,
-            description TEXT,
-            amount REAL,
-            expense_date TEXT,
-            created_at TEXT
-        )
-        """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS expenses (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        title TEXT,
+        amount NUMERIC,
+        created_at TIMESTAMP
+    )
+    """)
 
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        for name, keywords in DEFAULT_CATEGORIES:
-            conn.execute(
-                "INSERT OR IGNORE INTO categories (name, keywords, created_at) VALUES (?, ?, ?)",
-                (name, keywords, now),
-            )
-
-        conn.commit()
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 def sync_categories():
@@ -101,7 +92,7 @@ def sync_categories():
     with get_conn() as conn:
         for name, keywords in DEFAULT_CATEGORIES:
             existing = conn.execute(
-                "SELECT id, keywords FROM categories WHERE name = ?",
+                "SELECT id, keywords FROM categories WHERE name = %s",
                 (name,),
             ).fetchone()
 
@@ -109,12 +100,12 @@ def sync_categories():
                 # update only if changed
                 if (existing["keywords"] or "") != keywords:
                     conn.execute(
-                        "UPDATE categories SET keywords = ? WHERE name = ?",
+                        "UPDATE categories SET keywords = %s WHERE name = %s",
                         (keywords, name),
                     )
             else:
                 conn.execute(
-                    "INSERT INTO categories (name, keywords, created_at) VALUES (?, ?, ?)",
+                    "INSERT INTO categories (name, keywords, created_at) VALUES (%s, %s, %s)",
                     (name, keywords, now),
                 )
 

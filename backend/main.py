@@ -175,7 +175,6 @@ def delete_expense(id: int, user_id: int = Depends(get_user_id)):
 
 
 
-
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 if FRONTEND_DIST.exists():
