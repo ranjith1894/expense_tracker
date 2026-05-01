@@ -37,24 +37,25 @@ def home():
 @app.post("/api/register")
 def register(user: UserCreate):
     with get_conn() as conn:
-        cur = conn.execute("SELECT id FROM users WHERE email=?", (user.email,))
+        cur = conn.execute("SELECT id FROM users WHERE email=%s", (user.email,))
         if cur.fetchone():
             raise HTTPException(400, "User exists")
 
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         cur = conn.execute(
-            "INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)",
+            "INSERT INTO users (email, password_hash, created_at) VALUES (%s, %s, %s) RETURNING id",
             (user.email, hash_password(user.password), now),
         )
         conn.commit()
 
-        return {"access_token": create_token(cur.lastrowid)}
+        user_id = cur.fetchone()["id"]
+        return {"access_token": create_token(user_id)}
 
 @app.post("/api/login")
 def login(user: UserLogin):
     with get_conn() as conn:
-        cur = conn.execute("SELECT * FROM users WHERE email=?", (user.email,))
+        cur = conn.execute("SELECT * FROM users WHERE email=%s", (user.email,))
         db_user = cur.fetchone()
 
         if not db_user or not verify_password(user.password, db_user["password_hash"]):
@@ -66,14 +67,14 @@ def login(user: UserLogin):
 
 
 def parse_expense_note(note: str):
-    amount_matches = re.findall(r"\d+(?:\.\d+)?", note)
+    amount_matches = re.findall(r"\d+(?:[:.]\d+)?", note)
 
     if not amount_matches:
         raise HTTPException(400, "Amount not found in note")
 
-    amount = float(amount_matches[-1])
+    amount = float(amount_matches[-1].replace(":", "."))
 
-    description = re.sub(r"\d+(?:\.\d+)?", "", note).strip()
+    description = re.sub(r"\d+(?:[:.]\d+)?", "", note).strip()
     description = " ".join(description.split())
 
     if not description:
@@ -136,13 +137,15 @@ def add_expense(exp: ExpenseCreate, user_id: int = Depends(get_user_id)):
     with get_conn() as conn:
         cur = conn.execute("""
         INSERT INTO expenses (user_id, category_id, description, amount, expense_date, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        RETURNING id
         """, (user_id, category_id, description, amount, date_val, now))
 
         conn.commit()
+        expense_id = cur.fetchone()["id"]
 
     return {
-        "id": cur.lastrowid,
+        "id": expense_id,
         "description": description,
         "amount": amount,
         "category_id": category_id,
@@ -159,7 +162,7 @@ def get_expenses(user_id: int = Depends(get_user_id)):
         SELECT e.*, c.name as category
         FROM expenses e
         JOIN categories c ON c.id = e.category_id
-        WHERE user_id=?
+        WHERE user_id=%s
         ORDER BY id DESC
         """, (user_id,)).fetchall()
 
@@ -168,7 +171,7 @@ def get_expenses(user_id: int = Depends(get_user_id)):
 @app.delete("/api/expenses/{id}")
 def delete_expense(id: int, user_id: int = Depends(get_user_id)):
     with get_conn() as conn:
-        conn.execute("DELETE FROM expenses WHERE id=? AND user_id=?", (id, user_id))
+        conn.execute("DELETE FROM expenses WHERE id=%s AND user_id=%s", (id, user_id))
         conn.commit()
 
     return {"message": "deleted"}

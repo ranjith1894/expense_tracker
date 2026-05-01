@@ -52,7 +52,7 @@ DEFAULT_CATEGORIES = [
 
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-DATABASE_URL = "postgresql://neondb_owner:npg_uSUDB9lpbt6e@ep-rough-wildflower-amy6o6i8.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require"
+
 def get_conn():
     return psycopg.connect(DATABASE_URL, row_factory=dict_row)
 
@@ -75,8 +75,11 @@ def init_db():
     CREATE TABLE IF NOT EXISTS expenses (
         id SERIAL PRIMARY KEY,
         user_id INTEGER,
+        category_id INTEGER,
         title TEXT,
+        description TEXT,
         amount NUMERIC,
+        expense_date DATE,
         created_at TIMESTAMP
     )
     """)
@@ -93,6 +96,22 @@ def init_db():
     conn.execute("""
     ALTER TABLE categories
     ADD COLUMN IF NOT EXISTS created_at TIMESTAMP
+    """)
+    cur.execute("""
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS password_hash TEXT
+    """)
+    cur.execute("""
+    ALTER TABLE expenses
+    ADD COLUMN IF NOT EXISTS category_id INTEGER
+    """)
+    cur.execute("""
+    ALTER TABLE expenses
+    ADD COLUMN IF NOT EXISTS description TEXT
+    """)
+    cur.execute("""
+    ALTER TABLE expenses
+    ADD COLUMN IF NOT EXISTS expense_date DATE
     """)
 
     conn.commit()
