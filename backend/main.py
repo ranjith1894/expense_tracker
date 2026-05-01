@@ -28,10 +28,10 @@ def startup():
     init_db()
     sync_categories()
 
-@app.get("/")
+@app.get("/api/health")
 def home():
     return {"status": "running"}
-
+    
 # ---------- AUTH ----------
 
 @app.post("/api/register")
@@ -180,3 +180,4 @@ FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 if FRONTEND_DIST.exists():
     app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
+Then push
