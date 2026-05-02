@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, LogOut, Loader, Globe } from "lucide-react";
+import { Plus, Trash2, LogOut, Loader, Globe, RefreshCw } from "lucide-react";
 import { translations, months } from "./translations.js";
 
 const API_BASE = "";
@@ -21,6 +21,8 @@ export default function App() {
   const [language, setLanguage] = useState(
     localStorage.getItem("language") || "en"
   );
+  const [dataFetched, setDataFetched] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(null);
 
   const t = translations[language];
 
@@ -29,6 +31,18 @@ export default function App() {
       fetchExpenses();
     }
   }, [token]);
+
+  // Auto-refresh expenses every 5 minutes to keep data fresh
+  useEffect(() => {
+    if (!token || !dataFetched) return;
+
+    const interval = setInterval(() => {
+      console.log("Auto-refreshing data from API...");
+      fetchExpenses();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [token, dataFetched]);
 
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -121,8 +135,12 @@ export default function App() {
     try {
       const data = await request("/api/expenses");
       setExpenses(Array.isArray(data) ? data : []);
+      setDataFetched(true);
+      setLastFetchTime(new Date());
+      console.log("Data fetched successfully from API at", new Date().toLocaleTimeString());
     } catch (err) {
       setError(err.message);
+      setDataFetched(false);
 
       if (err.message.toLowerCase().includes("token")) {
         logout();
@@ -184,6 +202,39 @@ async function deleteExpense(id) {
     const newLanguage = language === "en" ? "ml" : "en";
     setLanguage(newLanguage);
     localStorage.setItem("language", newLanguage);
+  }
+
+  async function handleReload() {
+    setLoading(true);
+    try {
+      // First, fetch fresh data from API
+      await fetchExpenses();
+      console.log("Fresh data loaded from API");
+
+      // Wait a moment for user to see the update
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Then clear all caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        console.log('Cache cleared');
+      }
+      // Unregister service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+          await registration.unregister();
+        }
+      }
+      // Force reload without cache
+      window.location.href = window.location.origin;
+    } catch (error) {
+      console.error('Error in reload:', error);
+      window.location.reload();
+    } finally {
+      setLoading(false);
+    }
   }
 
   function formatDateLabel(dateStr) {
@@ -288,6 +339,20 @@ async function deleteExpense(id) {
 
             <button
               type="button"
+              className="icon-btn reload-btn"
+              onClick={handleReload}
+              title="Reload & fetch fresh data"
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader size={18} className="spinner" />
+              ) : (
+                <RefreshCw size={18} />
+              )}
+            </button>
+
+            <button
+              type="button"
               className="icon-btn logout-btn"
               onClick={logout}
               title={t.logout}
@@ -302,12 +367,22 @@ async function deleteExpense(id) {
           onClick={() => setShowTotal(!showTotal)}
           style={{ cursor: "pointer" }}
         >
-          <p className="muted">{monthName}</p>
-          <h2>₹{thisMonthTotal.toLocaleString("en-IN")}</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <p className="muted">{monthName}</p>
+              <h2>₹{thisMonthTotal.toLocaleString("en-IN")}</h2>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <p className="muted" style={{ margin: "0 0 4px 0", fontSize: "13px" }}>{t.expenses}</p>
+              <p style={{ margin: 0, fontSize: "24px", fontWeight: "700" }}>{thisMonthCount}</p>
+            </div>
+          </div>
 
-          <p>
-            {t.expenses}: <strong>{thisMonthCount}</strong>
-          </p>
+          {lastFetchTime && (
+            <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)", marginTop: "8px" }}>
+              Last updated: {lastFetchTime.toLocaleTimeString()}
+            </p>
+          )}
 
           {showTotal && (
             <>

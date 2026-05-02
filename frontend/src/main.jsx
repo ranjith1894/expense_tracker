@@ -12,11 +12,28 @@ createRoot(document.getElementById('root')).render(
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
-      console.log('Service Worker registered:', registration)
+    // First, unregister any old service workers
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => {
+        // Check if it's an old version
+        if (registration.scope !== window.location.origin + '/') {
+          registration.unregister();
+        }
+      });
+    });
+
+    // Register the current service worker
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(registration => {
+      console.log('Service Worker registered:', registration);
+      
+      // Check for updates periodically
+      setInterval(() => {
+        registration.update();
+      }, 60000); // Check every minute
     }).catch(error => {
-      console.error('Service Worker registration failed:', error)
-    })
-  })
+      console.error('Service Worker registration failed:', error);
+    });
+  });
 }
+
 

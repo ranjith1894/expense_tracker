@@ -3,19 +3,16 @@ const RUNTIME_CACHE = 'expense-tracker-runtime-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/src/main.jsx',
-  '/src/App.jsx',
-  '/src/index.css',
-  '/src/App.css',
 ];
 
 // Install event: cache static assets
 self.addEventListener('install', (event) => {
+  console.log('Service Worker installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('Caching static assets');
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('Some assets failed to cache:', err);
+      return cache.add('/index.html').catch((err) => {
+        console.warn('Failed to cache index.html:', err);
       });
     })
   );
@@ -24,22 +21,34 @@ self.addEventListener('install', (event) => {
 
 // Activate event: clean up old caches
 self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
+          // Delete all caches except current ones
           if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
             console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      console.log('Service Worker activated');
+      return self.clients.matchAll();
+    }).then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'CACHE_UPDATED',
+          message: 'Service Worker updated, refresh page for latest version'
+        });
+      });
     })
   );
   self.clients.claim();
 });
 
-// Fetch event: network-first with fallback to cache
+// Fetch event: network-first strategy
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -49,12 +58,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API calls: network-first, cache fallback
+  // API calls: network-first with cache fallback
   if (url.pathname.startsWith('/api')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Clone and cache successful responses
           if (response.status === 200) {
             const clonedResponse = response.clone();
             caches.open(RUNTIME_CACHE).then((cache) => {
@@ -75,13 +83,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache-first with network fallback
+  // HTML files: network-first (always fetch latest)
+  if (request.destination === 'document' || request.destination === '') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.status === 200) {
+            const clonedResponse = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, clonedResponse);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request).then((cachedResponse) => {
+            return cachedResponse || new Response('Offline', { status: 503 });
+          });
+        })
+    );
+    return;
+  }
+
+  // Other assets (JS, CSS, images): stale-while-revalidate
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(request).then((response) => {
+      const fetchPromise = fetch(request).then((response) => {
         if (!response || response.status !== 200 || response.type === 'error') {
           return response;
         }
@@ -90,7 +117,9 @@ self.addEventListener('fetch', (event) => {
           cache.put(request, clonedResponse);
         });
         return response;
-      });
+      }).catch(() => cachedResponse);
+
+      return cachedResponse || fetchPromise;
     })
   );
 });
@@ -104,7 +133,6 @@ self.addEventListener('sync', (event) => {
 
 async function syncExpenses() {
   try {
-    // Get pending expenses from IndexedDB or localStorage
     const pendingExpenses = JSON.parse(
       localStorage.getItem('pendingExpenses') || '[]'
     );
@@ -122,7 +150,6 @@ async function syncExpenses() {
         });
 
         if (response.ok) {
-          // Remove from pending after successful sync
           const updatedPending = pendingExpenses.filter(
             (e) => e.id !== expense.id
           );
@@ -137,6 +164,6 @@ async function syncExpenses() {
     }
   } catch (error) {
     console.error('Sync failed:', error);
-    throw error; // Retry sync
+    throw error;
   }
 }
