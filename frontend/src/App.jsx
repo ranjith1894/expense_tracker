@@ -10,12 +10,17 @@ export default function App() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [note, setNote] = useState("");
-  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [expenseDate, setExpenseDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [expenses, setExpenses] = useState([]);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showTotal, setShowTotal] = useState(false);
-  const [language, setLanguage] = useState(localStorage.getItem("language") || "en");
+  const [language, setLanguage] = useState(
+    localStorage.getItem("language") || "en"
+  );
 
   const t = translations[language];
 
@@ -28,6 +33,7 @@ export default function App() {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
+
   const monthName = `${months[language][currentMonth]} ${currentYear}`;
 
   const thisMonthExpenses = expenses.filter((item) => {
@@ -35,11 +41,17 @@ export default function App() {
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
 
-  const thisMonthTotal = thisMonthExpenses.reduce((sum, item) => {
-    return sum + Number(item.amount || 0);
-  }, 0);
+  const thisMonthTotal = thisMonthExpenses.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0
+  );
 
   const thisMonthCount = thisMonthExpenses.length;
+
+  const total = expenses.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0
+  );
 
   async function request(path, options = {}) {
     const headers = {
@@ -64,24 +76,29 @@ export default function App() {
 
   async function handleAuth(e) {
     e.preventDefault();
+
+    if (!identifier.trim() || !password.trim()) {
+      setError("Please enter username and password");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
     try {
       const path = authMode === "login" ? "/api/login" : "/api/register";
-      
-      let body;
-      if (authMode === "login") {
-        body = { identifier, password };
-      } else {
-        // For registration: only username and password
-        const username = identifier.trim();
-        body = {
-          username: username,
-          password
-        };
-      }
-      
+
+      const body =
+        authMode === "login"
+          ? {
+              identifier: identifier.trim(),
+              password,
+            }
+          : {
+              username: identifier.trim(),
+              password,
+            };
+
       const data = await request(path, {
         method: "POST",
         body: JSON.stringify(body),
@@ -103,9 +120,10 @@ export default function App() {
 
     try {
       const data = await request("/api/expenses");
-      setExpenses(data);
+      setExpenses(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message);
+
       if (err.message.toLowerCase().includes("token")) {
         logout();
       }
@@ -114,6 +132,7 @@ export default function App() {
 
   async function addExpense(e) {
     e.preventDefault();
+
     if (!note.trim()) return;
 
     setError("");
@@ -122,12 +141,15 @@ export default function App() {
     try {
       const newExpense = await request("/api/expenses", {
         method: "POST",
-        body: JSON.stringify({ note, expense_date: expenseDate }),
+        body: JSON.stringify({
+          note,
+          expense_date: expenseDate,
+        }),
       });
 
       setExpenses((prev) => [newExpense, ...prev]);
       setNote("");
-      setExpenseDate(new Date().toISOString().split('T')[0]);
+      setExpenseDate(new Date().toISOString().split("T")[0]);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -135,16 +157,22 @@ export default function App() {
     }
   }
 
-  async function deleteExpense(id) {
-    setError("");
+async function deleteExpense(id) {
+  setError("");
+  setDeletingId(id);
 
-    try {
-      await request(`/api/expenses/${id}`, { method: "DELETE" });
-      setExpenses((prev) => prev.filter((item) => item.id !== id));
-    } catch (err) {
-      setError(err.message);
-    }
+  try {
+    await request(`/api/expenses/${id}`, {
+      method: "DELETE",
+    });
+
+    setExpenses((prev) => prev.filter((item) => item.id !== id));
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setDeletingId(null);
   }
+}
 
   function logout() {
     localStorage.removeItem("token");
@@ -158,36 +186,46 @@ export default function App() {
     localStorage.setItem("language", newLanguage);
   }
 
-  const total = expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-
   function formatDateLabel(dateStr) {
     const selected = new Date(dateStr);
     const today = new Date();
     const yesterday = new Date(today);
+
     yesterday.setDate(yesterday.getDate() - 1);
 
-    const resetTime = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const resetTime = (d) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
     const selectedReset = resetTime(selected);
     const todayReset = resetTime(today);
     const yesterdayReset = resetTime(yesterday);
 
     if (selectedReset.getTime() === todayReset.getTime()) return "Today";
-    if (selectedReset.getTime() === yesterdayReset.getTime()) return "Yesterday";
+    if (selectedReset.getTime() === yesterdayReset.getTime())
+      return "Yesterday";
 
-    const daysAgo = Math.floor((todayReset - selectedReset) / (1000 * 60 * 60 * 24));
+    const daysAgo = Math.floor(
+      (todayReset - selectedReset) / (1000 * 60 * 60 * 24)
+    );
+
     if (daysAgo > 0 && daysAgo < 7) return `${daysAgo} days ago`;
 
-    return selected.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+    return selected.toLocaleDateString("en-IN", {
+      month: "short",
+      day: "numeric",
+    });
   }
 
   if (!token) {
     return (
-      <div className="page">
-        <div className="auth-card">
+      <main className="page">
+        <section className="auth-card">
           <h1>{t.appTitle}</h1>
-          <p className="muted">{authMode === "login" ? t.loginSubtitle : t.registerSubtitle}</p>
+          <p className="muted">
+            {authMode === "login" ? t.loginSubtitle : t.registerSubtitle}
+          </p>
 
-          <form onSubmit={handleAuth} className="form">
+          <form className="form" onSubmit={handleAuth}>
             <input
               type="text"
               placeholder={t.email}
@@ -205,91 +243,124 @@ export default function App() {
             />
 
             <button type="submit" disabled={loading}>
-              {loading ? t.pleaseWait : authMode === "login" ? t.login : t.register}
+              {loading
+                ? t.pleaseWait
+                : authMode === "login"
+                ? t.login
+                : t.register}
             </button>
           </form>
 
           {error && <p className="error">{error}</p>}
 
-          <button className="link-btn" onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>
+          <button
+            type="button"
+            onClick={() =>
+              setAuthMode(authMode === "login" ? "register" : "login")
+            }
+          >
             {authMode === "login" ? t.createAccount : t.alreadyHaveAccount}
           </button>
-        </div>
-      </div>
+        </section>
+      </main>
     );
   }
 
   return (
-    <div className="page">
-      <div className="app-shell">
+    <main className="page">
+      <section className="app-shell">
         <header className="header">
           <div>
             <h1>{t.appTitle}</h1>
             <p className="muted">{t.tip}</p>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button className="icon-btn lang-btn" onClick={toggleLanguage} title="Toggle Language">
+
+          <div className="actions">
+            <button
+              type="button"
+              className="icon-btn lang-btn"
+              onClick={toggleLanguage}
+              title="Change language"
+            >
               <Globe size={18} />
-              <span style={{ marginLeft: "4px", fontSize: "12px" }}>{language.toUpperCase()}</span>
+              {language.toUpperCase()}
             </button>
-            <button className="icon-btn logout-btn" onClick={logout} title={t.logout}>
+
+            <button
+              type="button"
+              className="icon-btn logout-btn"
+              onClick={logout}
+              title={t.logout}
+            >
               <LogOut size={18} />
             </button>
           </div>
         </header>
 
-        <section className="summary-card" onClick={() => setShowTotal(!showTotal)} style={{ cursor: "pointer" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <p className="muted">{monthName}</p>
-              <h2>₹{thisMonthTotal.toLocaleString("en-IN")}</h2>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <p className="muted" style={{ margin: "0 0 4px 0", fontSize: "13px" }}>{t.expenses}</p>
-              <p style={{ margin: 0, fontSize: "24px", fontWeight: "700" }}>{thisMonthCount}</p>
-            </div>
-          </div>
+        <div
+          className="summary-card"
+          onClick={() => setShowTotal(!showTotal)}
+          style={{ cursor: "pointer" }}
+        >
+          <p className="muted">{monthName}</p>
+          <h2>₹{thisMonthTotal.toLocaleString("en-IN")}</h2>
+
+          <p>
+            {t.expenses}: <strong>{thisMonthCount}</strong>
+          </p>
 
           {showTotal && (
-            <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.2)" }}>
-              <p className="muted" style={{ margin: "0 0 4px 0" }}>{t.totalAllTime}</p>
-              <h3 style={{ margin: "8px 0 0 0" }}>₹{total.toLocaleString("en-IN")}</h3>
-            </div>
+            <>
+              <hr />
+              <p className="muted">{t.totalAllTime}</p>
+              <h3>₹{total.toLocaleString("en-IN")}</h3>
+            </>
           )}
-        </section>
-        <form onSubmit={addExpense} className="note-form">
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        </div>
+
+        <form className="note-form" onSubmit={addExpense}>
+          <div>
             <input
               type="date"
               value={expenseDate}
               onChange={(e) => setExpenseDate(e.target.value)}
-              style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #ddd", fontSize: "14px" }}
-              max={new Date().toISOString().split('T')[0]}
+              max={new Date().toISOString().split("T")[0]}
               disabled={loading}
             />
-            <span style={{ fontSize: "12px", color: "#666", minWidth: "70px" }}>{formatDateLabel(expenseDate)}</span>
+            <span className="muted">{formatDateLabel(expenseDate)}</span>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
+
+          <div>
             <input
+              type="text"
               placeholder={t.addExpense}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               disabled={loading}
             />
-            <button type="submit" disabled={loading} className={loading ? "btn-loading" : ""}>
-              {loading ? <Loader size={18} className="spinner" /> : <Plus size={18} />}
+
+            <button
+              type="submit"
+              disabled={loading || !note.trim()}
+              className={loading ? "btn-loading" : ""}
+            >
+              {loading ? (
+                <Loader size={20} className="spinner" />
+              ) : (
+                <Plus size={20} />
+              )}
             </button>
           </div>
         </form>
 
         {error && <p className="error">{error}</p>}
 
-        <section className="list">
+        <div className="list">
           {expenses.length === 0 ? (
             <p className="empty">{t.noExpenses}</p>
           ) : (
             expenses.map((item) => (
-              <div className="expense-card" key={item.id}>
+              <article className="expense-card" key={item.id}>
                 <div>
                   <strong>{item.description}</strong>
                   <p className="muted">
@@ -299,15 +370,22 @@ export default function App() {
 
                 <div className="amount-box">
                   <span>₹{Number(item.amount).toLocaleString("en-IN")}</span>
-                  <button className="delete-btn" onClick={() => deleteExpense(item.id)}>
-                    <Trash2 size={16} />
+
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    onClick={() => deleteExpense(item.id)}
+                    title={t.deleteBtn}
+                    disabled={deletingId === item.id}
+                  >
+                    <Trash2 size={17} />
                   </button>
                 </div>
-              </div>
+              </article>
             ))
           )}
-        </section>
-      </div>
-    </div>
+        </div>
+      </section>
+    </main>
   );
 }

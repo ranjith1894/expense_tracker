@@ -313,11 +313,16 @@ button:disabled {
   padding: 0;
 }
 
+
 .delete-btn:hover {
   background: #fff1f2;
   border-color: #fecdd3;
 }
-
+.delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .error {
   color: #f87171;
   font-size: 14px;
