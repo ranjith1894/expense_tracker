@@ -11,7 +11,13 @@ body {
   background: #f1f5f9;
   color: #1e293b;
 }
-
+.watermark {
+    margin-top: 25px;
+    text-align: center;
+    font-size: 9px;
+    font-weight: 300;
+    color: rgb(136 169 204 / 45%);
+}
 .page {
   min-height: 100dvh;
   padding: 24px 16px;

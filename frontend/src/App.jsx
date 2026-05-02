@@ -344,6 +344,7 @@ async function deleteExpense(id) {
           >
             {authMode === "login" ? t.createAccount : t.alreadyHaveAccount}
           </button>
+          <p className="watermark">⚡ Built by Ranjith</p>
         </section>
       </main>
     );
