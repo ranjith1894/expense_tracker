@@ -27,12 +27,17 @@ body {
   overflow-y: auto;
 }
 
-.app-shell,
-.auth-card {
+.app-shell {
+  width: 100%;
   max-width: 440px;
-  margin: auto;
+  margin: 0 auto;
 }
 
+.auth-card {
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+}
 .header {
   display: flex;
   align-items: flex-start;
@@ -92,9 +97,9 @@ body {
 }
 
 .icon-btn.graph-btn {
-  background: #8b5cf6;
+  background: #3b82f6;
   color: #ffffff;
-  border-color: #8b5cf6;
+  border-color: #3b82f6;
 }
 
 .icon-btn.graph-btn:hover {
