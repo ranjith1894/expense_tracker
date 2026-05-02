@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, LogOut, Loader, Globe, RefreshCw } from "lucide-react";
+import { Plus, Trash2, LogOut, Loader, Globe, RefreshCw, BarChart3, ArrowLeft } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { translations, months } from "./translations.js";
 
 const API_BASE = "";
@@ -23,6 +24,7 @@ export default function App() {
   );
   const [dataFetched, setDataFetched] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState(null);
+  const [currentPage, setCurrentPage] = useState("home");
 
   const t = translations[language];
 
@@ -267,6 +269,36 @@ async function deleteExpense(id) {
     });
   }
 
+  // Prepare data for graph
+  function getGraphData() {
+    const dailyData = {};
+    const monthlyData = {};
+    const categoryData = {};
+
+    expenses.forEach((expense) => {
+      const date = new Date(expense.expense_date);
+      const dateKey = date.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+      const monthKey = date.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+
+      dailyData[dateKey] = (dailyData[dateKey] || 0) + expense.amount;
+      monthlyData[monthKey] = (monthlyData[monthKey] || 0) + expense.amount;
+      categoryData[expense.category] = (categoryData[expense.category] || 0) + expense.amount;
+    });
+
+    return {
+      daily: Object.entries(dailyData)
+        .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+        .slice(-30) // Last 30 days
+        .map(([date, amount]) => ({ date, amount })),
+      monthly: Object.entries(monthlyData)
+        .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+        .map(([month, amount]) => ({ month, amount })),
+      category: Object.entries(categoryData)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, amount]) => ({ name, amount })),
+    };
+  }
+
   if (!token) {
     return (
       <main className="page">
@@ -339,6 +371,15 @@ async function deleteExpense(id) {
 
             <button
               type="button"
+              className="icon-btn graph-btn"
+              onClick={() => setCurrentPage("graph")}
+              title="View graph"
+            >
+              <BarChart3 size={18} />
+            </button>
+
+            <button
+              type="button"
               className="icon-btn reload-btn"
               onClick={handleReload}
               title="Reload & fetch fresh data"
@@ -393,7 +434,9 @@ async function deleteExpense(id) {
           )}
         </div>
 
-        <form className="note-form" onSubmit={addExpense}>
+        {currentPage === "home" ? (
+          <>
+            <form className="note-form" onSubmit={addExpense}>
           <div>
             <input
               type="date"
@@ -460,6 +503,63 @@ async function deleteExpense(id) {
             ))
           )}
         </div>
+          </>
+        ) : (
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <button
+              className="icon-btn"
+              onClick={() => setCurrentPage("home")}
+              style={{ alignSelf: "flex-start", background: "#3b82f6", color: "white" }}
+            >
+              <ArrowLeft size={18} /> Back
+            </button>
+
+            {expenses.length > 0 ? (
+              <>
+                <div style={{ background: "white", padding: "16px", borderRadius: "8px" }}>
+                  <h3>Last 30 Days</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={getGraphData().daily}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" stroke="#64748b" />
+                      <YAxis stroke="#64748b" />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="amount" stroke="#3b82f6" strokeWidth={2} dot={{ fill: "#3b82f6", r: 4 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div style={{ background: "white", padding: "16px", borderRadius: "8px" }}>
+                  <h3>Monthly Comparison</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={getGraphData().monthly}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" stroke="#64748b" />
+                      <YAxis stroke="#64748b" />
+                      <Tooltip />
+                      <Bar dataKey="amount" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div style={{ background: "white", padding: "16px", borderRadius: "8px" }}>
+                  <h3>Expenses by Category</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={getGraphData().category} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" stroke="#64748b" />
+                      <YAxis dataKey="name" type="category" stroke="#64748b" width={100} />
+                      <Tooltip />
+                      <Bar dataKey="amount" fill="#8b5cf6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            ) : (
+              <p className="empty">No expenses to display</p>
+            )}
+          </div>
+        )}
       </section>
     </main>
   );

@@ -85,6 +85,17 @@ body {
   background: #eff6ff;
 }
 
+.icon-btn.graph-btn {
+  background: #8b5cf6;
+  color: #ffffff;
+  border-color: #8b5cf6;
+}
+
+.icon-btn.graph-btn:hover {
+  background: #7c3aed;
+  border-color: #7c3aed;
+}
+
 .icon-btn.reload-btn {
   background: #3b82f6;
   color: #ffffff;
