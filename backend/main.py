@@ -133,7 +133,8 @@ def add_expense(exp: ExpenseCreate, user_id: int = Depends(get_user_id)):
 
     category_id, category_name = detect_category_id(exp.note)
 
-    date_val = date.today().isoformat()
+    # Use provided date or default to today
+    date_val = exp.expense_date if exp.expense_date else date.today().isoformat()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     with get_conn() as conn:

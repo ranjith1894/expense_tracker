@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import date
 
 class UserCreate(BaseModel):
     username: str
@@ -11,3 +12,4 @@ class UserLogin(BaseModel):
 
 class ExpenseCreate(BaseModel):
     note: str
+    expense_date: Optional[str] = None
