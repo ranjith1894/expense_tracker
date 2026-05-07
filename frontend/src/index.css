@@ -454,3 +454,575 @@ button:disabled {
   background: #8b5cf6;
   border-color: #8b5cf6;
 }
+
+
+/* =========================
+   SUPER ADMIN DASHBOARD CSS
+   Add at bottom of App.css
+========================= */
+
+/* Main admin page */
+.admin-page {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  box-sizing: border-box;
+  color: #0f172a;
+}
+
+/* Header */
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.admin-header h1 {
+  margin: 0;
+  font-size: 42px;
+  line-height: 1.15;
+  font-weight: 900;
+  color: #0f4c81;
+}
+
+.admin-header .muted {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 16px;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.admin-actions button {
+  height: 46px;
+  min-width: 110px;
+  border: none;
+  border-radius: 12px;
+  background: #0f4c81;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0 18px;
+}
+
+.admin-actions button:hover {
+  background: #0b3d68;
+}
+
+.admin-actions button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* =========================
+   LOCK LOGIN UI
+========================= */
+
+.admin-lock-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: #eef4f8;
+}
+
+.admin-lock-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 34px 30px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.lock-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #eef6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+.admin-lock-card h2 {
+  margin: 0 0 8px;
+  font-size: 30px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.admin-lock-card .muted {
+  margin: 0 0 24px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.admin-lock-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-lock-form input {
+  width: 100%;
+  height: 50px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 0 15px;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.admin-lock-form input::placeholder {
+  color: #94a3b8;
+}
+
+.admin-lock-form input:focus {
+  border-color: #0f4c81;
+  box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.14);
+}
+
+.admin-lock-form button {
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: 14px;
+  background: #0f4c81;
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-lock-form button:hover {
+  background: #0b3d68;
+}
+
+.admin-login-error {
+  margin: 14px 0 0;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* =========================
+   SUMMARY CARDS
+========================= */
+
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.admin-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  min-height: 110px;
+  box-sizing: border-box;
+}
+
+.admin-card span {
+  display: block;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.admin-card strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1.1;
+  color: #0f172a;
+  font-weight: 900;
+  word-break: break-word;
+}
+
+/* =========================
+   CHARTS
+========================= */
+
+.admin-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-bottom: 30px;
+}
+
+.admin-chart-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.admin-chart-card h3 {
+  margin: 0 0 18px;
+  font-size: 24px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.admin-chart-card .muted {
+  color: #64748b;
+  font-size: 15px;
+}
+
+/* =========================
+   TABLE CARD
+========================= */
+
+.admin-table-card {
+  background: #ffffff !important;
+  border-radius: 22px !important;
+  padding: 24px !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08) !important;
+  margin-top: 28px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.admin-table-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  margin-bottom: 18px !important;
+}
+
+.admin-table-header h3 {
+  margin: 0 !important;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+}
+
+.admin-table-header .muted {
+  margin: 6px 0 0 !important;
+  color: #64748b !important;
+  font-size: 15px !important;
+}
+
+/* =========================
+   FILTERS
+========================= */
+
+.admin-table-card .admin-filters {
+  display: grid !important;
+  grid-template-columns: minmax(260px, 2fr) minmax(150px, 1fr) minmax(160px, 1fr) 130px 90px !important;
+  gap: 12px !important;
+  margin: 20px 0 22px !important;
+  align-items: center !important;
+}
+
+.admin-table-card .admin-filters input,
+.admin-table-card .admin-filters select {
+  width: 100% !important;
+  height: 46px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  padding: 0 14px !important;
+  font-size: 15px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+}
+
+.admin-table-card .admin-filters input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.admin-table-card .admin-filters input:focus,
+.admin-table-card .admin-filters select:focus {
+  border-color: #0f4c81 !important;
+  box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.14) !important;
+}
+
+.admin-table-card .secondary-btn {
+  height: 46px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  background: #0f4c81 !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  padding: 0 18px !important;
+}
+
+.admin-table-card .secondary-btn:hover {
+  background: #0b3d68 !important;
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.admin-table-wrap {
+  width: 100% !important;
+  overflow-x: auto !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+}
+
+.admin-table-card .admin-table {
+  width: 100% !important;
+  min-width: 1050px !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  table-layout: fixed !important;
+  background: #ffffff !important;
+  margin: 0 !important;
+}
+
+.admin-table-card .admin-table thead {
+  background: #f8fafc !important;
+}
+
+.admin-table-card .admin-table th {
+  padding: 15px 16px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  background: #f8fafc !important;
+}
+
+.admin-table-card .admin-table td {
+  padding: 15px 16px !important;
+  border-bottom: 1px solid #edf2f7 !important;
+  color: #0f172a !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  text-align: left !important;
+  vertical-align: middle !important;
+  background: #ffffff !important;
+}
+
+.admin-table-card .admin-table tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+.admin-table-card .admin-table tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Column widths */
+.admin-table-card .admin-table th:nth-child(1),
+.admin-table-card .admin-table td:nth-child(1) {
+  width: 210px !important;
+}
+
+.admin-table-card .admin-table th:nth-child(2),
+.admin-table-card .admin-table td:nth-child(2) {
+  width: 300px !important;
+}
+
+.admin-table-card .admin-table th:nth-child(3),
+.admin-table-card .admin-table td:nth-child(3) {
+  width: 140px !important;
+}
+
+.admin-table-card .admin-table th:nth-child(4),
+.admin-table-card .admin-table td:nth-child(4) {
+  width: 120px !important;
+}
+
+.admin-table-card .admin-table th:nth-child(5),
+.admin-table-card .admin-table td:nth-child(5) {
+  width: 150px !important;
+}
+
+.admin-table-card .admin-table th:nth-child(6),
+.admin-table-card .admin-table td:nth-child(6) {
+  width: 210px !important;
+}
+
+.user-cell {
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  word-break: break-word !important;
+}
+
+.description-cell {
+  color: #334155 !important;
+  word-break: break-word !important;
+}
+
+.category-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 6px 11px !important;
+  border-radius: 999px !important;
+  background: #eef6ff !important;
+  color: #0f4c81 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.amount-cell {
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  white-space: nowrap !important;
+}
+
+.empty-table {
+  text-align: center !important;
+  padding: 40px !important;
+  color: #64748b !important;
+  font-weight: 700 !important;
+}
+
+/* =========================
+   PAGINATION
+========================= */
+
+.admin-pagination {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 14px !important;
+  margin-top: 20px !important;
+}
+
+.admin-pagination button {
+  height: 42px !important;
+  min-width: 100px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  background: #0f4c81 !important;
+  color: white !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+}
+
+.admin-pagination button:hover:not(:disabled) {
+  background: #0b3d68 !important;
+}
+
+.admin-pagination button:disabled {
+  background: #cbd5e1 !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+}
+
+.admin-pagination span {
+  color: #334155 !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+}
+
+/* =========================
+   RESPONSIVE DESIGN
+========================= */
+
+@media (max-width: 1100px) {
+  .admin-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table-card .admin-filters {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .admin-table-card .admin-filters input {
+    grid-column: span 2 !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-page {
+    padding: 24px 14px;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-header h1 {
+    font-size: 34px;
+  }
+
+  .admin-actions {
+    width: 100%;
+  }
+
+  .admin-actions button {
+    flex: 1;
+  }
+
+  .admin-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-card strong {
+    font-size: 25px;
+  }
+
+  .admin-chart-card {
+    padding: 18px;
+  }
+
+  .admin-table-card {
+    padding: 16px !important;
+  }
+
+  .admin-table-card .admin-filters {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-table-card .admin-filters input {
+    grid-column: span 1 !important;
+  }
+
+  .admin-table-header h3 {
+    font-size: 24px !important;
+  }
+
+  .admin-pagination {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+  }
+
+  .admin-pagination span {
+    width: 100%;
+    text-align: center;
+  }
+}

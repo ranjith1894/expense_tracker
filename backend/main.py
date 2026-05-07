@@ -180,6 +180,75 @@ def delete_expense(id: int, user_id: int = Depends(get_user_id)):
     return {"message": "deleted"}
 
 
+@app.get("/api/admin/summary")
+def admin_summary():
+    with get_conn() as conn:
+        row = conn.execute("""
+            SELECT
+                (SELECT COUNT(*) FROM users) AS total_users,
+                (SELECT COUNT(*) FROM expenses) AS total_expenses,
+                COALESCE((SELECT SUM(amount) FROM expenses), 0) AS total_amount,
+                COALESCE((
+                    SELECT SUM(amount)
+                    FROM expenses
+                    WHERE date_trunc('month', expense_date::date) = date_trunc('month', CURRENT_DATE)
+                ), 0) AS this_month_amount
+        """).fetchone()
+
+        return dict(row)
+
+@app.get("/api/admin/expenses")
+def admin_expenses():
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT
+                e.id,
+                e.user_id,
+                u.username,
+                e.description,
+                e.amount,
+                e.expense_date,
+                e.created_at,
+                c.name AS category
+            FROM expenses e
+            LEFT JOIN users u ON u.id = e.user_id
+            LEFT JOIN categories c ON c.id = e.category_id
+            ORDER BY e.expense_date DESC, e.id DESC
+        """).fetchall()
+
+        return [dict(r) for r in rows]
+
+@app.get("/api/admin/user-summary")
+def admin_user_summary():
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT
+                u.username,
+                COUNT(e.id) AS expense_count,
+                COALESCE(SUM(e.amount), 0) AS total_amount
+            FROM users u
+            LEFT JOIN expenses e ON e.user_id = u.id
+            GROUP BY u.id, u.username
+            ORDER BY total_amount DESC
+        """).fetchall()
+
+        return [dict(r) for r in rows]
+
+@app.get("/api/admin/category-summary")
+def admin_category_summary():
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT
+                COALESCE(c.name, 'Other') AS category,
+                COUNT(e.id) AS expense_count,
+                COALESCE(SUM(e.amount), 0) AS total_amount
+            FROM expenses e
+            LEFT JOIN categories c ON c.id = e.category_id
+            GROUP BY c.name
+            ORDER BY total_amount DESC
+        """).fetchall()
+
+        return [dict(r) for r in rows]
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Plus, Trash2, LogOut, Loader, Globe, RefreshCw, BarChart3, ArrowLeft } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { translations, months } from "./translations.js";
+import AdminDashboard from "./AdminDashboard.jsx";
 
 const API_BASE = "";
 
@@ -27,6 +28,12 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState("home");
 
   const t = translations[language];
+
+  const isAdminPage = window.location.pathname === "/admin";
+
+  if (isAdminPage) {
+    return <AdminDashboard />;
+  }
 
   useEffect(() => {
     if (token) {
