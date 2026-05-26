@@ -1,10 +1,38 @@
-import React, { useEffect, useState } from "react";
-import { Plus, Trash2, LogOut, Loader, Globe, RefreshCw, BarChart3, ArrowLeft } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Trash2, LogOut, Loader, Globe, RefreshCw, BarChart3, ArrowLeft, Search, X, Tag, Maximize2, Minimize2 } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { translations, months } from "./translations.js";
 import AdminDashboard from "./AdminDashboard.jsx";
 
 const API_BASE = "";
+
+const FALLBACK_EXPENSE_TYPES = [
+  "Food",
+  "Travel",
+  "Shopping",
+  "Bills",
+  "Health",
+  "Rent",
+  "Entertainment",
+  "Education",
+  "Other",
+];
+
+const FALLBACK_EXPENSE_KEYWORDS = {
+  Food: ["food", "tea", "coffee", "lunch", "dinner", "breakfast", "biriyani", "biryani", "pizza", "hotel", "restaurant", "cafe", "snacks"],
+  Travel: ["uber", "ola", "bus", "train", "metro", "taxi", "auto", "flight", "petrol", "diesel", "fuel", "parking"],
+  Shopping: ["amazon", "flipkart", "dress", "shirt", "shoe", "watch", "grocery", "groceries", "grocery store", "supermarket", "mall", "store"],
+  Bills: ["electricity", "water", "internet", "wifi", "mobile", "recharge", "bill", "subscription"],
+  Health: ["medicine", "doctor", "hospital", "clinic", "pharmacy", "medical", "test"],
+  Rent: ["rent", "room", "pg", "hostel", "house", "flat"],
+  Entertainment: ["movie", "cinema", "game", "concert", "party", "outing"],
+  Education: ["course", "book", "exam", "fees", "training", "learning"],
+  Other: [],
+};
+
+const FALLBACK_EXPENSE_KEYWORD_OPTIONS = FALLBACK_EXPENSE_TYPES.flatMap((type) =>
+  FALLBACK_EXPENSE_KEYWORDS[type].map((keyword) => ({ keyword, type }))
+);
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -12,6 +40,7 @@ export default function App() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [note, setNote] = useState("");
+  const [expenseSearch, setExpenseSearch] = useState("");
   const [expenseDate, setExpenseDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -26,24 +55,26 @@ export default function App() {
   const [dataFetched, setDataFetched] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState(null);
   const [currentPage, setCurrentPage] = useState("home");
+  const [isNoteFocused, setIsNoteFocused] = useState(false);
+  const [isNoteExpanded, setIsNoteExpanded] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const [categoryKeywordOptions, setCategoryKeywordOptions] = useState(
+    FALLBACK_EXPENSE_KEYWORD_OPTIONS
+  );
 
   const t = translations[language];
 
   const isAdminPage = window.location.pathname === "/admin";
 
-  if (isAdminPage) {
-    return <AdminDashboard />;
-  }
-
   useEffect(() => {
-    if (token) {
+    if (token && !isAdminPage) {
       fetchExpenses();
     }
   }, [token]);
 
   // Auto-refresh expenses every 5 minutes to keep data fresh
   useEffect(() => {
-    if (!token || !dataFetched) return;
+    if (!token || !dataFetched || isAdminPage) return;
 
     const interval = setInterval(() => {
       console.log("Auto-refreshing data from API...");
@@ -53,28 +84,145 @@ export default function App() {
     return () => clearInterval(interval);
   }, [token, dataFetched]);
 
+  useEffect(() => {
+    if (!token || isAdminPage) return;
+
+    async function fetchCategories() {
+      try {
+        const response = await fetch(`${API_BASE}/api/categories`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || "Unable to fetch categories");
+        }
+
+        const options = data.flatMap((category) =>
+          (category.keywords || []).map((keyword) => ({
+            keyword,
+            type: category.name,
+          }))
+        );
+
+        if (options.length > 0) {
+          setCategoryKeywordOptions(options);
+        }
+      } catch (err) {
+        console.warn("Using fallback category keywords", err);
+      }
+    }
+
+    fetchCategories();
+  }, [token, isAdminPage]);
+
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
   const monthName = `${months[language][currentMonth]} ${currentYear}`;
 
-  const thisMonthExpenses = expenses.filter((item) => {
+  const thisMonthExpenses = useMemo(() => expenses.filter((item) => {
     const d = new Date(item.expense_date);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-  });
+  }), [expenses, currentMonth, currentYear]);
 
-  const thisMonthTotal = thisMonthExpenses.reduce(
+  const thisMonthTotal = useMemo(() => thisMonthExpenses.reduce(
     (sum, item) => sum + Number(item.amount || 0),
     0
-  );
+  ), [thisMonthExpenses]);
 
   const thisMonthCount = thisMonthExpenses.length;
 
-  const total = expenses.reduce(
+  const total = useMemo(() => expenses.reduce(
     (sum, item) => sum + Number(item.amount || 0),
     0
-  );
+  ), [expenses]);
+
+  const currentNoteLine = note.split("\n").at(-1);
+  const currentWord = currentNoteLine.match(/[a-zA-Z-]+$/)?.[0].toLowerCase() || "";
+  const suggestedKeywords = useMemo(() => {
+    if (currentWord.length < 2) return [];
+
+    return categoryKeywordOptions.filter(({ keyword, type }) => {
+      const normalizedKeyword = keyword.toLowerCase();
+      const normalizedType = type.toLowerCase();
+
+      return (
+        normalizedKeyword.startsWith(currentWord) ||
+        normalizedKeyword.includes(currentWord) ||
+        normalizedType.startsWith(currentWord)
+      );
+    }).slice(0, 6);
+  }, [categoryKeywordOptions, currentWord]);
+  const showKeywordSuggestions = isNoteFocused && suggestedKeywords.length > 0;
+
+  function insertKeywordSuggestion(keyword) {
+    const lines = note.split("\n");
+    const lastLine = lines.at(-1);
+    const updatedLine = currentWord
+      ? lastLine.replace(/[a-zA-Z-]+$/, keyword)
+      : `${lastLine}${lastLine.trim() ? " " : ""}${keyword}`;
+
+    lines[lines.length - 1] = updatedLine;
+    setNote(`${lines.join("\n")} `);
+    setIsNoteFocused(true);
+  }
+
+  function handleNoteKeyDown(e) {
+    if (!showKeywordSuggestions) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveSuggestionIndex((index) => (index + 1) % suggestedKeywords.length);
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveSuggestionIndex(
+        (index) => (index - 1 + suggestedKeywords.length) % suggestedKeywords.length
+      );
+    }
+
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      insertKeywordSuggestion(suggestedKeywords[activeSuggestionIndex].keyword);
+    }
+
+    if (e.key === "Escape") {
+      setIsNoteFocused(false);
+    }
+  }
+
+  function getCategoryTone(category = "") {
+    const tones = {
+      Food: "tone-food",
+      Travel: "tone-travel",
+      Shopping: "tone-shopping",
+      Bills: "tone-bills",
+      Health: "tone-health",
+      Rent: "tone-rent",
+      Entertainment: "tone-entertainment",
+      Education: "tone-education",
+    };
+
+    return tones[category] || "tone-other";
+  }
+
+  const filteredExpenses = useMemo(() => expenses.filter((item) => {
+    const search = expenseSearch.trim().toLowerCase();
+
+    if (!search) return true;
+
+    return (
+      (item.description || "").toLowerCase().includes(search) ||
+      (item.category || "").toLowerCase().includes(search) ||
+      String(item.amount || "").includes(search) ||
+      String(item.expense_date || "").toLowerCase().includes(search)
+    );
+  }), [expenses, expenseSearch]);
+
+  if (isAdminPage) {
+    return <AdminDashboard />;
+  }
 
   async function request(path, options = {}) {
     const headers = {
@@ -160,21 +308,30 @@ export default function App() {
   async function addExpense(e) {
     e.preventDefault();
 
-    if (!note.trim()) return;
+    const notes = note
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (notes.length === 0) return;
 
     setError("");
     setLoading(true);
 
     try {
-      const newExpense = await request("/api/expenses", {
-        method: "POST",
-        body: JSON.stringify({
-          note,
-          expense_date: expenseDate,
-        }),
-      });
+      const newExpenses = await Promise.all(
+        notes.map((expenseNote) =>
+          request("/api/expenses", {
+            method: "POST",
+            body: JSON.stringify({
+              note: expenseNote,
+              expense_date: expenseDate,
+            }),
+          })
+        )
+      );
 
-      setExpenses((prev) => [newExpense, ...prev]);
+      setExpenses((prev) => [...newExpenses.reverse(), ...prev]);
       setNote("");
       setExpenseDate(new Date().toISOString().split("T")[0]);
     } catch (err) {
@@ -287,9 +444,11 @@ async function deleteExpense(id) {
       const dateKey = date.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
       const monthKey = date.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
 
-      dailyData[dateKey] = (dailyData[dateKey] || 0) + expense.amount;
-      monthlyData[monthKey] = (monthlyData[monthKey] || 0) + expense.amount;
-      categoryData[expense.category] = (categoryData[expense.category] || 0) + expense.amount;
+      const amount = Number(expense.amount || 0);
+
+      dailyData[dateKey] = (dailyData[dateKey] || 0) + amount;
+      monthlyData[monthKey] = (monthlyData[monthKey] || 0) + amount;
+      categoryData[expense.category] = (categoryData[expense.category] || 0) + amount;
     });
 
     return {
@@ -445,53 +604,137 @@ async function deleteExpense(id) {
         {currentPage === "home" ? (
           <>
             <form className="note-form" onSubmit={addExpense}>
-          <div>
-            <input
-              type="date"
-              value={expenseDate}
-              onChange={(e) => setExpenseDate(e.target.value)}
-              max={new Date().toISOString().split("T")[0]}
-              disabled={loading}
-            />
-            <span className="muted">{formatDateLabel(expenseDate)}</span>
+          <div className="note-toolbar">
+            <div className="note-date-group">
+              <input
+                type="date"
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+                max={new Date().toISOString().split("T")[0]}
+                disabled={loading}
+              />
+              <span className="muted">{formatDateLabel(expenseDate)}</span>
+            </div>
+
+            <div className="note-actions">
+              <button
+                type="button"
+                className="note-expand-btn"
+                onClick={() => setIsNoteExpanded((expanded) => !expanded)}
+                title={isNoteExpanded ? "Compact note box" : "Expand for multiple expenses"}
+                aria-label={isNoteExpanded ? "Compact note box" : "Expand for multiple expenses"}
+              >
+                {isNoteExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+              </button>
+
+              <button
+                type="submit"
+                className={loading ? "note-submit-btn btn-loading" : "note-submit-btn"}
+                disabled={loading || !note.trim()}
+                title="Add expense"
+                aria-label="Add expense"
+              >
+                {loading ? (
+                  <Loader size={20} className="spinner" />
+                ) : (
+                  <Plus size={22} />
+                )}
+              </button>
+            </div>
           </div>
 
-          <div>
-            <input
-              type="text"
-              placeholder={t.addExpense}
+          <div className="note-entry">
+            <textarea
+              rows={isNoteExpanded ? 4 : 1}
+              className={isNoteExpanded ? "note-textarea expanded" : "note-textarea compact"}
+              placeholder={isNoteExpanded ? `${t.addExpense}\n${t.multipleExpenseHint}` : t.addExpense}
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onChange={(e) => {
+                setNote(e.target.value);
+                if (e.target.value.includes("\n")) {
+                  setIsNoteExpanded(true);
+                }
+                setIsNoteFocused(true);
+                setActiveSuggestionIndex(0);
+              }}
+              onFocus={() => setIsNoteFocused(true)}
+              onBlur={() => setIsNoteFocused(false)}
+              onKeyDown={handleNoteKeyDown}
               disabled={loading}
             />
-
-            <button
-              type="submit"
-              disabled={loading || !note.trim()}
-              className={loading ? "btn-loading" : ""}
-            >
-              {loading ? (
-                <Loader size={20} className="spinner" />
-              ) : (
-                <Plus size={20} />
-              )}
-            </button>
           </div>
+
+          {showKeywordSuggestions && (
+            <div className="keyword-suggestions" role="listbox" aria-label="Expense keyword suggestions">
+              <div className="keyword-suggestions-title">Suggestions</div>
+              {suggestedKeywords.map((item, index) => (
+                <button
+                  key={`${item.type}-${item.keyword}`}
+                  type="button"
+                  className={index === activeSuggestionIndex ? "active" : ""}
+                  onClick={() => insertKeywordSuggestion(item.keyword)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  role="option"
+                  aria-selected={index === activeSuggestionIndex}
+                >
+                  <Tag size={15} />
+                  <span>{item.keyword}</span>
+                  <small>{item.type}</small>
+                </button>
+              ))}
+              <div className="keyword-suggestions-hint">Use ↑ ↓ and Enter to select</div>
+            </div>
+          )}
+
         </form>
 
         {error && <p className="error">{error}</p>}
 
+        <div className="expense-search">
+          <div className="expense-search-field">
+            <Search size={18} aria-hidden="true" />
+            <input
+              type="search"
+              placeholder={t.searchExpenses}
+              value={expenseSearch}
+              onChange={(e) => setExpenseSearch(e.target.value)}
+              aria-label="Search expenses"
+            />
+            {expenseSearch && (
+              <button
+                type="button"
+                className="search-clear-btn"
+                onClick={() => setExpenseSearch("")}
+                aria-label="Clear search"
+                title="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          {expenseSearch && (
+            <span className="expense-search-count">
+              {filteredExpenses.length} of {expenses.length}
+            </span>
+          )}
+        </div>
+
         <div className="list">
-          {expenses.length === 0 ? (
-            <p className="empty">{t.noExpenses}</p>
+          {filteredExpenses.length === 0 ? (
+            <p className="empty">
+              {expenses.length === 0 ? t.noExpenses : t.noSearchResults}
+            </p>
           ) : (
-            expenses.map((item) => (
+            filteredExpenses.map((item) => (
               <article className="expense-card" key={item.id}>
                 <div>
                   <strong>{item.description}</strong>
-                  <p className="muted">
-                    {item.category} • {item.expense_date}
-                  </p>
+                  <div className="expense-meta">
+                    <span className={`expense-category-pill ${getCategoryTone(item.category)}`}>
+                      {item.category}
+                    </span>
+                    <span>{item.expense_date}</span>
+                  </div>
                 </div>
 
                 <div className="amount-box">
@@ -513,52 +756,52 @@ async function deleteExpense(id) {
         </div>
           </>
         ) : (
-          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div className="graph-page">
             <button
-              className="icon-btn"
+              type="button"
+              className="icon-btn graph-back-btn"
               onClick={() => setCurrentPage("home")}
-              style={{ alignSelf: "flex-start", background: "#3b82f6", color: "white" }}
             >
               <ArrowLeft size={18} /> Back
             </button>
 
             {expenses.length > 0 ? (
               <>
-                <div style={{ background: "white", padding: "16px", borderRadius: "8px" }}>
+                <div className="chart-card">
                   <h3>Last 30 Days</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={getGraphData().daily}>
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#d8e4e3" />
                       <XAxis dataKey="date" stroke="#64748b" />
                       <YAxis stroke="#64748b" />
                       <Tooltip />
-                      <Line type="monotone" dataKey="amount" stroke="#3b82f6" strokeWidth={2} dot={{ fill: "#3b82f6", r: 4 }} />
+                      <Line type="monotone" dataKey="amount" stroke="#0f766e" strokeWidth={3} dot={{ fill: "#0f766e", r: 4 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
 
-                <div style={{ background: "white", padding: "16px", borderRadius: "8px" }}>
+                <div className="chart-card">
                   <h3>Monthly Comparison</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={getGraphData().monthly}>
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#d8e4e3" />
                       <XAxis dataKey="month" stroke="#64748b" />
                       <YAxis stroke="#64748b" />
                       <Tooltip />
-                      <Bar dataKey="amount" fill="#3b82f6" />
+                      <Bar dataKey="amount" fill="#0f766e" radius={[7, 7, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
 
-                <div style={{ background: "white", padding: "16px", borderRadius: "8px" }}>
+                <div className="chart-card">
                   <h3>Expenses by Category</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={getGraphData().category} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#d8e4e3" />
                       <XAxis type="number" stroke="#64748b" />
                       <YAxis dataKey="name" type="category" stroke="#64748b" width={100} />
                       <Tooltip />
-                      <Bar dataKey="amount" fill="#8b5cf6" />
+                      <Bar dataKey="amount" fill="#0f4c81" radius={[0, 7, 7, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

@@ -38,5 +38,13 @@ def get_user_id(creds: HTTPAuthorizationCredentials = Depends(bearer)):
         return int(payload["sub"])
     except JWTError:
         raise HTTPException(401, "Invalid token")
-    
-print(hash_password("r123"))
+
+print("########")
+print("########")
+print("########")
+print("########")
+print("########")
+print("PWD" , hash_password("r123"))
+print("########")
+print("########")
+print("########")

@@ -1,9 +1,5 @@
-const CACHE_NAME = 'expense-tracker-v1';
-const RUNTIME_CACHE = 'expense-tracker-runtime-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-];
+const CACHE_NAME = 'expense-tracker-v2';
+const RUNTIME_CACHE = 'expense-tracker-runtime-v2';
 
 // Install event: cache static assets
 self.addEventListener('install', (event) => {

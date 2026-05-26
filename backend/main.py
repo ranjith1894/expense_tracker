@@ -127,6 +127,28 @@ def detect_category_id(note: str):
 
     return get_other_category()
 
+@app.get("/api/categories")
+def get_categories():
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT id, name, keywords
+            FROM categories
+            ORDER BY name
+        """).fetchall()
+
+    return [
+        {
+            "id": row["id"],
+            "name": row["name"],
+            "keywords": [
+                keyword.strip()
+                for keyword in (row["keywords"] or "").split(",")
+                if keyword.strip()
+            ],
+        }
+        for row in rows
+    ]
+
 @app.post("/api/expenses")
 def add_expense(exp: ExpenseCreate, user_id: int = Depends(get_user_id)):
     description, amount = parse_expense_note(exp.note)

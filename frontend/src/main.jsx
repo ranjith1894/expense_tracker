@@ -9,8 +9,9 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>,
 )
 
-// Register service worker for PWA
-if ('serviceWorker' in navigator) {
+// Register service worker for PWA only in production builds.
+// In dev it can keep serving old JS/CSS and hide recent UI changes.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     // First, unregister any old service workers
     navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -36,4 +37,9 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+if ('serviceWorker' in navigator && import.meta.env.DEV) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => registration.unregister());
+  });
+}
 
